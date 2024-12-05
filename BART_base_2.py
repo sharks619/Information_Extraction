@@ -274,6 +274,7 @@ writer = SummaryWriter(log_dir=log_dir)
 # 학습 루프
 def train_with_full_and_random_evaluation(model, tokenizer, train_loader, val_loader, test_loader, epochs=3):
     optimizer = torch.optim.AdamW(model.parameters(), lr=5e-5)
+    os.makedirs("./saved_models", exist_ok=True)  # 모델 저장 디렉토리 생성
 
     for epoch in range(epochs):
         model.train()
@@ -349,6 +350,12 @@ def train_with_full_and_random_evaluation(model, tokenizer, train_loader, val_lo
 
         print(f"Validation Loss: {val_loss:.4f}, Validation Seq Accuracy: {val_accuracy:.4f}")
         print(f"Test Loss: {test_loss:.4f}, Test Seq Accuracy: {test_accuracy:.4f}")
+
+        # 모델 저장 (Validation Accuracy 포함)
+        model_save_path = f"./saved_models/bart_base_epoch_{epoch + 1}_valacc_{val_accuracy:.4f}.pth"
+        torch.save(model.state_dict(), model_save_path)
+        print(f"Model saved to {model_save_path}")
+
 
 
 # 데이터 경로

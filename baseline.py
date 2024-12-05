@@ -390,6 +390,9 @@ def inference(test_iter, converter, device, ckpt_path):
     pos_cnt = 0
     neg_cnt = 0
 
+    predictions = []
+    references = []
+
     with torch.no_grad():
         model.eval()
         for i, (data, labels) in enumerate(test_iter):
@@ -397,19 +400,27 @@ def inference(test_iter, converter, device, ckpt_path):
             y1 = softmax(model(input=data))
             output_arr = np.argmax(y1.to(torch.device('cpu')).numpy(), axis=-1)
             if converter is not None:
-                texts = converter.decode(data.to(torch.device('cpu')).numpy())
                 output = converter.decode(output_arr)
                 gt = converter.decode(labels.to(torch.device('cpu')).numpy())
+                predictions.extend(output)
+                references.extend(gt)
+
                 for oo in range(len(output)):
                     if not output[oo] == gt[oo]:
                         neg_cnt += 1
                     else:
                         pos_cnt += 1
 
+    # 출력: 예측값과 실제값 10개씩 프린트
+    print("Sample Predictions and References:")
+    for pred, ref in zip(predictions[:10], references[:10]):
+        print(f"Predicted: {pred} | Reference: {ref}")
+
     test_result = pos_cnt / (neg_cnt + pos_cnt)
     print('test_results %.3f' % test_result)
 
-    return {}
+    return predictions, references
+
 
 
 train_loader, _, converter = load_data('./data/train', max_text_length=100, shuffle=True)

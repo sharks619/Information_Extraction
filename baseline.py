@@ -25,6 +25,7 @@ class LabelConverter(object):
         self.dict = {}
         for i, char in enumerate(self.character):
             self.dict[char] = i
+
     def encode(self, text, batch_max_length=0):
         """ convert text-label into text-index.
         input:
@@ -104,14 +105,11 @@ class ExtModel(nn.Module):
 
         self.FeatureExtraction = nn.Embedding(self.vocab_size, self.embed_size)
         # Fully-Connected Layer
-        self.linear = nn.Linear(self.embed_size * max_sequence_length, self.output_size * 5)
-        # self.linear1 = nn.Linear(self.embed_size * max_sequence_length, self.output_size * 4)
-        # self.linear2 = nn.Linear(self.output_size * 4, self.output_size * 2)
-        self.fc = nn.Linear(self.output_size * 5, self.vocab_size * max_sequence_length)
+        self.linear = nn.Linear(self.embed_size * max_sequence_length, self.output_size * 2)
+        self.fc = nn.Linear(self.output_size * 2, self.vocab_size * max_sequence_length)
 
     def forward(self, input):
         '''
-
         :param input: [B, L, V]
                     B : Batch size
                     L : Max sequence length
@@ -119,14 +117,10 @@ class ExtModel(nn.Module):
         :return:
         '''
         embed_sent = self.FeatureExtraction(input)
-        ##
         batch_size = embed_sent.shape[0]
         embed_sent = embed_sent.view(batch_size, -1)
         embed_linear = self.linear(embed_sent)
-        # embed_linear1 = self.linear1(embed_sent)
-        # embed_linear2 = self.linear1(embed_linear1)
         final_out = self.fc(embed_linear)
-        # final_out = self.fc(embed_linear2)
         final_out = final_out.view(batch_size, -1, self.vocab_size)
         return final_out
 
@@ -156,7 +150,6 @@ def train_epoch(net, optimizer, scheduler,
         y1 = softmax(y1)
         output_arr = np.argmax(y1.detach().cpu().numpy(), axis=-1)
         if converter is not None:
-            texts = converter.decode(data.cpu().numpy())
             output = converter.decode(output_arr)
             gt = converter.decode(labels.cpu().numpy())
 
@@ -203,7 +196,6 @@ def eval_epoch(net, eval_loader, criterion, device, softmax, converter, show_lab
             output_arr = np.argmax(y1.cpu().numpy(), axis=-1)
 
             if converter is not None:
-                texts = converter.decode(data.cpu().numpy())
                 output = converter.decode(output_arr)
                 gt = converter.decode(labels.cpu().numpy())
 
@@ -233,7 +225,6 @@ def load_data(_path, max_text_length=100, max_batch_size=64, shuffle=False, num_
     train_data_list = []
     train_label_list = []
 
-    ######
     char_path = './char_map_codeT.txt'
     f = open(char_path, 'r', -1, "utf-8")
     line = f.readline()
@@ -251,7 +242,6 @@ def load_data(_path, max_text_length=100, max_batch_size=64, shuffle=False, num_
         train_data_list+=data
         train_label_list+=label
 
-    ##
     encoded_train_data_list, max_len = converter.encode(train_data_list, batch_max_length=max_text_length)
     encoded_train_label_list, output_max_len = converter.encode(train_label_list, batch_max_length=max_len - 1)
 

@@ -101,10 +101,10 @@ def train_model(model, tokenizer, train_loader, val_loader, epochs=3):
                 total_samples += 1
 
             if (batch_idx + 1) % 10 == 0:
-                seq_accuracy = total_correct / total_samples if total_samples > 0 else 0
+                accuracy = total_correct / total_samples if total_samples > 0 else 0
                 print(
                     f"Epoch [{epoch + 1}/{epochs}], Batch [{batch_idx + 1}/{len(train_loader)}], "
-                    f"Loss: {loss.item():.4f}, Seq Accuracy: {seq_accuracy:.4f}"
+                    f"Loss: {loss.item():.4f}, Accuracy: {accuracy:.4f}"
                 )
 
         train_losses.append(total_loss / len(train_loader))
@@ -257,11 +257,11 @@ def evaluate_full_loader(model, tokenizer, loader, phase):
                 total_samples += 1
 
     avg_loss = total_loss / len(loader)
-    seq_accuracy = total_correct / total_samples if total_samples > 0 else 0
+    accuracy = total_correct / total_samples if total_samples > 0 else 0
 
     print(f"\n[{phase} Full Evaluation]")
-    print(f"Loss: {avg_loss:.4f}, Seq-Level Accuracy: {seq_accuracy:.4f}")
-    return avg_loss, seq_accuracy
+    print(f"Loss: {avg_loss:.4f}, Accuracy: {accuracy:.4f}")
+    return avg_loss, accuracy
 
 # 학습 루프
 def train_with_full_and_random_evaluation(model, tokenizer, train_loader, val_loader, test_loader, epochs=3):
@@ -302,13 +302,13 @@ def train_with_full_and_random_evaluation(model, tokenizer, train_loader, val_lo
                     total_correct += 1
                 total_samples += 1
 
-            seq_accuracy = total_correct / total_samples if total_samples > 0 else 0
+            accuracy = total_correct / total_samples if total_samples > 0 else 0
 
             # Iteration마다 출력
             if (batch_idx + 1) % 10 == 0:
                 print(
                     f"Batch [{batch_idx + 1}/{len(train_loader)}], "
-                    f"Loss: {loss.item():.4f}, Seq Accuracy: {seq_accuracy:.4f}"
+                    f"Loss: {loss.item():.4f}, Accuracy: {accuracy:.4f}"
                 )
 
                 # Train, Validation, Test 랜덤 배치 평가
@@ -317,7 +317,7 @@ def train_with_full_and_random_evaluation(model, tokenizer, train_loader, val_lo
                 evaluate_random_batch(model, tokenizer, test_loader, phase="Test")
 
         print(f"\nEpoch {epoch + 1}/{epochs} completed! Average Train Loss: {total_loss / len(train_loader):.4f}")
-        print(f"Epoch {epoch + 1}/{epochs}, Train Seq Accuracy: {seq_accuracy:.4f}")
+        print(f"Epoch {epoch + 1}/{epochs}, Train Accuracy: {accuracy:.4f}")
 
         # Full evaluation at the end of the epoch
         evaluate_full_loader(model, tokenizer, train_loader, phase="Train")

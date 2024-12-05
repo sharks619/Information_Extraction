@@ -53,7 +53,7 @@ def load_data(file_path, tokenizer, max_length=128, batch_size=16):
     return dataloader
 
 # 모델 및 토크나이저 로드
-model_name = "facebook/bart-small"
+model_name = "facebook/bart-base"
 tokenizer = BartTokenizer.from_pretrained(model_name)
 model = BartForConditionalGeneration.from_pretrained(model_name).to(device)
 

@@ -352,7 +352,7 @@ def train_with_full_and_random_evaluation(model, tokenizer, train_loader, val_lo
         print(f"Test Loss: {test_loss:.4f}, Test Seq Accuracy: {test_accuracy:.4f}")
 
         # 모델 저장 (Validation Accuracy 포함)
-        model_save_path = f"./saved_models/bart_large_epoch_{epoch + 1}_valacc_{val_accuracy:.4f}.pth"
+        model_save_path = f"./saved_models/bart_large_epoch_{epoch + 1}_val_acc_{val_accuracy:.4f}.pth"
         torch.save(model.state_dict(), model_save_path)
         print(f"Model saved to {model_save_path}")
 

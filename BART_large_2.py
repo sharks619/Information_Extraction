@@ -266,10 +266,11 @@ def evaluate_full_loader(model, tokenizer, loader, phase):
 from torch.utils.tensorboard import SummaryWriter
 import os
 
-# TensorBoard SummaryWriter 초기화
+# TensorBoard SummaryWriter
 log_dir = "./tensorboard_logs"
 os.makedirs(log_dir, exist_ok=True)
-writer = SummaryWriter(log_dir=log_dir)
+run_name = "large_model"
+writer = SummaryWriter(log_dir=f"{log_dir}/{run_name}")
 
 # 학습 루프
 def train_with_full_and_random_evaluation(model, tokenizer, train_loader, val_loader, test_loader, epochs=3):

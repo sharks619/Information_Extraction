@@ -269,7 +269,7 @@ import os
 # TensorBoard SummaryWriter
 log_dir = "./tensorboard_logs"
 os.makedirs(log_dir, exist_ok=True)
-run_name = "large_model"
+run_name = "BART_large_model"
 writer = SummaryWriter(log_dir=f"{log_dir}/{run_name}")
 
 # 학습 루프

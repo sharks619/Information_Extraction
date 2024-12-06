@@ -1,6 +1,7 @@
 from transformers import BartForConditionalGeneration, BartTokenizer
 import torch
 from torch.utils.data import Dataset, DataLoader
+from torch.cuda.amp import GradScaler, autocast
 import matplotlib.pyplot as plt
 import random
 
@@ -59,6 +60,9 @@ model = BartForConditionalGeneration.from_pretrained(model_name).to(device)
 
 # 손실 함수 및 옵티마이저
 optimizer = torch.optim.AdamW(model.parameters(), lr=5e-5)
+
+# Mixed Precision Training용 GradScaler 초기화
+scaler = GradScaler()
 
 # 학습 루프
 def train_model(model, tokenizer, train_loader, val_loader, epochs=3):
@@ -242,10 +246,11 @@ def evaluate_full_loader(model, tokenizer, loader, phase):
             attention_mask = batch["attention_mask"].to(device)
             labels = batch["labels"].to(device)
 
-            outputs = model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
-            loss = outputs.loss
-            total_loss += loss.item()
+            with autocast():  # Inference에서 Mixed Precision 사용
+                outputs = model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
+                loss = outputs.loss
 
+            total_loss += loss.item()
             logits = outputs.logits
             preds = torch.argmax(logits, dim=-1)
             pred_texts = tokenizer.batch_decode(preds, skip_special_tokens=True)
@@ -288,18 +293,23 @@ def train_with_full_and_random_evaluation(model, tokenizer, train_loader, val_lo
             attention_mask = batch["attention_mask"].to(device)
             labels = batch["labels"].to(device)
 
-            outputs = model(
-                input_ids=input_ids,
-                attention_mask=attention_mask,
-                labels=labels
-            )
-            loss = outputs.loss
-            total_loss += loss.item()
+            # Mixed Precision Training
+            with autocast():  # 자동 혼합 정밀도
+                outputs = model(
+                    input_ids=input_ids,
+                    attention_mask=attention_mask,
+                    labels=labels
+                )
+                loss = outputs.loss
 
             # Backpropagation
             optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
+            scaler.scale(loss).backward()  # Mixed Precision에서 GradScaler 사용
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            scaler.step(optimizer)
+            scaler.update()
+
+            total_loss += loss.item()
 
             # Accuracy 계산 (시퀀스 단위)
             logits = outputs.logits

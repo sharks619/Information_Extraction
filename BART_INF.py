@@ -52,25 +52,20 @@ def load_data(file_path, tokenizer, max_length=128, batch_size=16):
     return dataloader
 
 # 모델 로드 함수
-def load_model_from_saved_models(model_name, saved_models_dir, epoch, acc, tokenizer_name="facebook/bart-large"):
-    """
-    저장된 모델에서 특정 에폭과 ACC를 기반으로 모델을 로드.
-    """
-    model_path = os.path.join(saved_models_dir, f"model_epoch_{epoch}_ACC_{acc}.pt")
-    print(f"Loading model from {model_path}")
+def load_model_from_checkpoint(model_name, checkpoint_path, tokenizer_name):
+    print(f"Loading model from {checkpoint_path}")
     tokenizer = BartTokenizer.from_pretrained(tokenizer_name)
     model = BartForConditionalGeneration.from_pretrained(tokenizer_name)
-    model.load_state_dict(torch.load(model_path, map_location=device))
+    model.load_state_dict(torch.load(checkpoint_path, map_location=device))
     model.to(device)
     model.eval()
     return model, tokenizer
-
 
 # Inference 및 결과 저장 함수
 def evaluate_and_save_results(model, tokenizer, test_loader, output_file="inference_results.txt"):
     model.eval()
     total_correct = 0
-    total_chars = 0
+    total_samples = 0
     predictions = []
     references = []
     inputs = []
@@ -99,33 +94,38 @@ def evaluate_and_save_results(model, tokenizer, test_loader, output_file="infere
             with open(output_file, "a", encoding="utf-8") as f:
                 for inp, pred, ref in zip(input_texts, pred_texts, ref_texts):
                     f.write(f"{inp}\t{pred}\t{ref}\n")
+                    if pred == ref:
+                        total_correct += 1
+                    total_samples += 1
 
-            # Batch 단위로 Accuracy 계산
-            for pred_text, ref_text in zip(pred_texts, ref_texts):
-                total_correct += sum(p == r for p, r in zip(pred_text, ref_text))
-                total_chars += len(ref_text)
-
-    accuracy = total_correct / total_chars if total_chars > 0 else 0
+    # Accuracy 계산
+    accuracy = total_correct / total_samples if total_samples > 0 else 0
     print(f"Test Accuracy: {accuracy:.4f}")
     return inputs, predictions, references, accuracy
 
-
-# 저장된 모델 경로 및 설정
-saved_models_dir = "./saved_models"
-epoch = 1  # 불러올 모델의 에폭
-acc = "13"  # 불러올 모델의 ACC (정확도)
-test_file = "./data/test/test.txt"
+# 체크포인트 파일 경로 및 설정
+## BART - large 모델
+checkpoint_path = "./BART_large_val_acc_0.9369.pth"
+test_file = "./test.txt"
 output_file = "./inference_results.txt"
+model_name = "facebook/bart-large"
+
+# 체크포인트 파일 경로 및 설정
+## BART - base 모델
+checkpoint_path = "./BART_base_val_acc_0.9406.pth"
+test_file = "./test.txt"
+output_file = "./inference_results.txt"
+model_name = "facebook/bart-base"
 
 # 데이터 로더 준비
-test_loader = load_data(test_file, BartTokenizer.from_pretrained("facebook/bart-large"), max_length=128, batch_size=16)
+tokenizer = BartTokenizer.from_pretrained(model_name)
+test_loader = load_data(test_file, tokenizer, max_length=128, batch_size=16)
 
 # 모델 로드 및 테스트
-model, tokenizer = load_model_from_saved_models(
-    model_name="facebook/bart-large",
-    saved_models_dir=saved_models_dir,
-    epoch=epoch,
-    acc=acc
+model, tokenizer = load_model_from_checkpoint(
+    model_name = model_name,
+    checkpoint_path = checkpoint_path,
+    tokenizer_name = model_name
 )
 
 # 테스트 데이터 평가 및 결과 저장
